@@ -264,8 +264,9 @@
         <div class="assistance-box">
             <span class="assistance-title">ASSISTANCE TECHNIQUE</span>
             <b>Pierre-Alain Mory</b><br>
-            <a href="pierre-alain@catl.be">pierre-alain@catl.be</a><br>
-            <span>📞 0033 7 83 00 09 56</span><br>
+            <a href="mailto:pierre.alain.mory@dix-autrement.fr">pierre.alain.mory@dix-autrement.fr</a><br>
+            <span>📞 07 83 00 09 56</span><br>
+            <a href="http://www.dix-autrement.fr" target="_blank">www.dix-autrement.fr</a>
         </div>
     </div>
 
@@ -543,7 +544,7 @@
             <a href="http://www.dix-autrement.fr" target="_blank" class="dix-link">www.dix-autrement.fr</a>
         </div>
         <div style="font-size: 0.75rem; color: #95a5a6; margin-top: 10px; text-align: center; line-height: 1.4;">
-            © 2026 Cabinet DIX Autrement. Tous droits réservés.<br>
+            © 2024-2025 Cabinet DIX Autrement. Tous droits réservés.<br>
             Toute reproduction, copie ou utilisation non autorisée de cet outil ou de son code source est strictement interdite.
         </div>
     </div>
@@ -903,6 +904,71 @@
             if(gRatio < 10) gtElem.style.color = "#27ae60";
             else if(gRatio < 30) gtElem.style.color = "#e67e22";
             else gtElem.style.color = "#e74c3c";
+        }
+
+        function resetAll() {
+            if(!confirm("⚠️ ATTENTION : Vous allez effacer TOUTES les données (Paramètres du dépôt et Historique des tournées).\n\nVoulez-vous vraiment tout remettre à zéro ?")) return;
+            
+            // 1. Nettoyage LocalStorage
+            localStorage.removeItem('pnr_logistique_v83_clean');
+            localStorage.removeItem('logistique_tours_v83_clean');
+            
+            // 2. Reset Variables Globales
+            stops = [];
+            savedTours = [];
+            currentTourId = null;
+            pData = { lat:null, lon:null, addr:"" };
+            sTemp = { lat:null, lon:null };
+            currentStats = { cost:0, ca:0, ratio:0, dist:0, time:0 };
+
+            // 3. Reset UI Dépôt (Champs texte)
+            document.getElementById('pName').value = "";
+            document.getElementById('pAddr').value = "";
+            document.getElementById('pMail').value = "";
+            
+            // Reset Métiers
+            const checkboxes = document.querySelectorAll('#pJobMenu input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateJobSelection();
+
+            // Reset Infra Sliders
+            ['Sec', 'Frais', 'Neg', 'Prep'].forEach(type => {
+                const el = document.getElementById('surf' + type);
+                if(el) {
+                    el.value = 0;
+                    updateSurfaceDisplay(type.toLowerCase(), 0);
+                }
+            });
+
+            // Reset Véhicule & Coûts (Valeurs par défaut)
+            document.getElementById('vType').selectedIndex = 1; // Fourgon compact
+            document.getElementById('vFrigo').checked = false;
+            document.getElementById('fType').selectedIndex = 0; // Diesel
+            document.getElementById('vCons').value = "8.5";
+            document.getElementById('fPrice').value = "1.75";
+            document.getElementById('vAmort').value = "0.25";
+            
+            document.getElementById('driverType').selectedIndex = 0; // Producteur
+            document.getElementById('cH').value = "18";
+            document.getElementById('tPrep').value = "30";
+            document.getElementById('tLoad').value = "20";
+
+            // 4. Déverrouillage et validation
+            unlockDepot(); // Repasse en mode "prod"
+            checkProducerValidation(); // Met à jour l'état du bouton valider (sera disabled)
+            
+            // 5. Reset UI Tournée
+            // On appelle newTour(true) pour nettoyer la carte et les champs arrêts
+            newTour(true); 
+            
+            // 6. Reset Liste des tournées
+            renderToursList();
+            
+            // 7. Feedback
+            showToast("♻️ Réinitialisation complète effectuée !");
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // --- BACKUP ---
