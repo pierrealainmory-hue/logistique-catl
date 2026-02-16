@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulateur Logistique - CATL (V117 Debug)</title>
+    <title>Simulateur Logistique - CATL (V127 Debug & Fix 2)</title>
     
     <link rel="icon" href="https://github.com/pierrealainmory-hue/logistique-data-projet/blob/main/LogoEpurvertpetit.png?raw=true">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -74,9 +74,28 @@
         
         /* LAYOUT & MAP */
         .main-container { display: flex; gap: 25px; flex: 1; margin-bottom: 30px;}
-        .left-panel { flex: 1; min-width: 420px; transition: opacity 0.3s; }
+        .left-panel { flex: 1; min-width: 420px; transition: opacity 0.3s; position: relative; }
         .right-panel { flex: 2; min-width: 300px; display: flex; flex-direction: column; gap: 20px; }
-        .blocked-area { opacity: 0.4; pointer-events: none; filter: grayscale(100%); user-select: none; }
+        
+        /* ZONES BLOQUEES (Fix UX) */
+        .blocked-area { 
+            opacity: 0.5; 
+            filter: grayscale(100%); 
+            position: relative; /* Pour positionner l'overlay */
+        }
+        
+        /* Overlay invisible pour intercepter les clics sur la zone bloquée */
+        .block-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 999;
+            cursor: not-allowed;
+            display: none;
+        }
+        .blocked-area .block-overlay {
+            display: block;
+        }
+
         #map { height: 450px; width: 100%; border-radius: 6px; border: 1px solid #dcdfe6; background-color: #e5e9ec; display: block; z-index: 1; }
         .map-num-icon { background: var(--info); color: white; border-radius: 50%; text-align: center; line-height: 24px; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.3); }
 
@@ -141,6 +160,29 @@
         .legend-bar { background: white; border-radius: 6px; border: 1px solid #eee; padding: 8px; margin-top: 10px; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; font-size: 0.75rem; color: var(--text); }
         .legend-tag-title { background: #f8f9fa; border: 1px solid #ddd; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px; color: var(--primary); }
         .legend-item { display: flex; align-items: center; gap: 5px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+        }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body>
@@ -313,6 +355,8 @@
 
     <div class="main-container">
         <div class="left-panel blocked-area" id="locked-section">
+            <div class="block-overlay" onclick="alertValiderDepot()"></div>
+            
             <div class="card" style="border-left: 6px solid var(--accent); margin-bottom: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h3 style="margin:0; font-size:1.1rem; color:var(--accent);">📅 Édition de la Tournée</h3>
@@ -443,6 +487,9 @@
         </div>
     </div>
 
+    <!-- TOAST ELEMENT -->
+    <div id="toast">✨ Nouvelle tournée créée</div>
+
     <!-- MODAL RGPD -->
     <div id="rgpd-modal" class="modal">
         <div class="modal-content">
@@ -530,6 +577,20 @@
             updateTourNameSuggestions();
         };
 
+        // --- UX HELPER ---
+        function alertValiderDepot() {
+            alert("⚠️ ACTION REQUISE\n\nVeuillez d'abord valider le Dépôt (Formulaire du haut, bouton VERT) avant de pouvoir créer ou éditer une tournée.");
+            document.getElementById('pName').focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function showToast(msg) {
+            var x = document.getElementById("toast");
+            x.innerText = msg;
+            x.className = "show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+
         // --- MULTI-SELECT ---
         function toggleJobMenu() { const menu = document.getElementById('pJobMenu'); menu.style.display = (menu.style.display === 'block') ? 'none' : 'block'; }
         function updateJobSelection() {
@@ -600,7 +661,11 @@
 
         // --- MAP CLIC ---
         function onMapClick(e) { 
-            if (mode === 'stop' && document.getElementById('locked-section').classList.contains('blocked-area')) return; 
+            if (mode === 'stop' && document.getElementById('locked-section').classList.contains('blocked-area')) {
+                 // FIX UX: Alert user they need to validate depot first
+                 alertValiderDepot();
+                 return;
+            }
             
             let lat = e.latlng.lat, lon = e.latlng.lng; 
             if(mode === 'prod') {
@@ -627,9 +692,42 @@
 
         // --- LOGIC ---
         function formatMinutes(mins) { let h = Math.floor(mins / 60); let m = Math.round(mins % 60); return `${h}h${m.toString().padStart(2,'0')}`; }
-        function updateTourNameSuggestions() { const dataList = document.getElementById('tourNameSuggestions'); dataList.innerHTML = ''; const defaults = ["Tournée Restaurants", "Tournée Cantines", "Tournée Magasins", "Tournée Particuliers", "Tournée Écoles", "Tournée AMAP"]; const existing = savedTours.map(t => t.name); const all = [...new Set([...defaults, ...existing])]; all.forEach(name => { let opt = document.createElement('option'); opt.value = name; dataList.appendChild(opt); }); }
-        function generateDefaultName(day) { const prefix = `TOURNEE - ${day} - `; let max = 0; savedTours.forEach(t => { if(t.name && t.name.startsWith(prefix)) { let rest = t.name.substring(prefix.length); let num = parseInt(rest); if(!isNaN(num) && num > max) max = num; } }); return prefix + (max + 1); }
-        function autoNameTour() { if(!currentTourId || document.getElementById('tName').value === "") { const day = document.getElementById('tDay').value; const newName = generateDefaultName(day); document.getElementById('tName').value = newName; updateStatsTitle(); } }
+        function updateTourNameSuggestions() { 
+            const dataList = document.getElementById('tourNameSuggestions'); 
+            dataList.innerHTML = ''; 
+            const defaults = ["Tournée Restaurants", "Tournée Cantines", "Tournée Magasins", "Tournée Particuliers", "Tournée Écoles", "Tournée AMAP"]; 
+            const existing = (savedTours || []).map(t => t.name); 
+            const all = [...new Set([...defaults, ...existing])]; 
+            all.forEach(name => { let opt = document.createElement('option'); opt.value = name; dataList.appendChild(opt); }); 
+        }
+
+        function generateDefaultName(day) { 
+            const prefix = `TOURNEE - ${day} - `; 
+            let max = 0; 
+            if(savedTours && savedTours.length > 0) {
+                savedTours.forEach(t => { 
+                    if(t.name && t.name.startsWith(prefix)) { 
+                        let rest = t.name.substring(prefix.length); 
+                        let num = parseInt(rest); 
+                        if(!isNaN(num) && num > max) max = num; 
+                    } 
+                });
+            }
+            return prefix + (max + 1); 
+        }
+
+        function autoNameTour() { 
+            try {
+                if(!currentTourId || document.getElementById('tName').value === "") { 
+                    const day = document.getElementById('tDay').value; 
+                    const newName = generateDefaultName(day); 
+                    document.getElementById('tName').value = newName; 
+                    updateStatsTitle(); 
+                } 
+            } catch(e) {
+                console.error("Erreur autoNameTour", e);
+            }
+        }
 
         function saveDepot() {
             pData.name = document.getElementById('pName').value; pData.addr = document.getElementById('pAddr').value;
@@ -763,7 +861,39 @@
         }
 
         function loadTour(id) { const tour = savedTours.find(t => t.id === id); if(tour) { currentTourId = tour.id; document.getElementById('tName').value = tour.name; document.getElementById('tDay').value = tour.day; stops = tour.stops || []; updateView(); updateStatsTitle(); renderToursList(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
-        function newTour() { if(stops.length > 0 && !confirm("Voulez-vous vider la carte pour créer une nouvelle tournée ?")) return; currentTourId = null; document.getElementById('tDay').value = "Lundi"; stops = []; currentStats = { cost:0, ca:0, ratio:0, dist:0, time:0 }; autoNameTour(); updateView(); updateStatsTitle(); renderToursList(); }
+        
+        function newTour() { 
+            // 1. CONFIRMATION
+            if(stops.length > 0 && !confirm("Voulez-vous vider la carte pour créer une nouvelle tournée ?")) return; 
+            
+            // 2. RESET STATE
+            currentTourId = null; 
+            document.getElementById('tDay').value = "Lundi"; 
+            stops = []; 
+            sTemp = { lat: null, lon: null }; 
+            
+            // 3. RESET INPUTS (CLEANUP V127)
+            document.getElementById('sClient').value = "";
+            document.getElementById('sAddr').value = "";
+            document.getElementById('sEuro').value = "0";
+            document.getElementById('sTime').value = "15";
+            document.getElementById('sOpType').value = "📦";
+
+            // 4. RESET STATS
+            currentStats = { cost:0, ca:0, ratio:0, dist:0, time:0 }; 
+            
+            // 5. UPDATE UI
+            // Reset tName explicitly to force auto-name generation even if it was "TOURNEE - Lundi - 1"
+            document.getElementById('tName').value = ""; 
+            autoNameTour(); 
+            updateView(); 
+            updateStatsTitle(); 
+            renderToursList(); 
+            
+            // 6. FEEDBACK
+            showToast("✨ Nouvelle tournée créée !");
+        }
+
         function deleteTour(id) { if(!confirm("Supprimer cette tournée ?")) return; savedTours = savedTours.filter(t => t.id !== id); localStorage.setItem('logistique_tours_v83_clean', JSON.stringify(savedTours)); if(currentTourId === id) newTour(); else renderToursList(); }
         
         function checkProducerValidation() { 
@@ -792,13 +922,27 @@
             document.getElementById('header-summary').style.display = 'flex'; 
             const name = document.getElementById('pName').value; let rawAddr = document.getElementById('pAddr').value; let addrParts = rawAddr.split(',').map(s => s.trim()); let shortAddr = addrParts.slice(0, 3).join(', '); const tPrep = parseFloat(document.getElementById('tPrep').value) || 0; const tLoad = parseFloat(document.getElementById('tLoad').value) || 0; const totalTime = tPrep + tLoad; const veh = document.getElementById('vType').value; 
             document.getElementById('summary-content').innerHTML = `<span>✅ <strong>${name}</strong></span><span class="sep">|</span><span>📍 ${shortAddr}</span><span class="sep">|</span><span>⏱️ ${totalTime} min</span><span class="sep">|</span><span>🚚 ${veh}</span>`; 
-            document.getElementById('locked-section').classList.remove('blocked-area'); 
+            
+            // UNBLOCK AREA
+            const lockedSection = document.getElementById('locked-section');
+            lockedSection.classList.remove('blocked-area'); 
+            
             setMode('stop'); 
             setTimeout(function(){ map.invalidateSize(); }, 200); 
             // FORCE RE-RENDER DEPOT ICON
             updateView();
         }
-        function unlockDepot() { document.getElementById('header-form').style.display = 'block'; document.getElementById('header-summary').style.display = 'none'; document.getElementById('locked-section').classList.add('blocked-area'); setMode('prod'); }
+
+        function unlockDepot() { 
+            document.getElementById('header-form').style.display = 'block'; 
+            document.getElementById('header-summary').style.display = 'none'; 
+            
+            const lockedSection = document.getElementById('locked-section');
+            lockedSection.classList.add('blocked-area'); 
+            
+            setMode('prod'); 
+        }
+
         function setMode(m) { mode = m; document.getElementById('btn-t-prod').style.background = m==='prod' ? 'var(--accent)' : '#95a5a6'; document.getElementById('btn-t-stop').style.background = m==='stop' ? 'var(--accent)' : '#95a5a6'; }
         function showTempMarker(lat, lon) { }
         
@@ -841,6 +985,19 @@
         }
 
         // UPDATE VIEW & ROUTE (V116 FIX)
+        function reorderStops() {
+            let ns=[]; 
+            document.querySelectorAll('.stop-item').forEach(it=>{ 
+                const id = it.getAttribute('data-id'); 
+                if(id) { 
+                    const found = stops.find(s=>s.id===parseInt(id)); 
+                    if(found) ns.push(found); 
+                } 
+            }); 
+            stops=ns; 
+            updateView(); 
+        }
+
         function updateView() {
             markers.clearLayers(); routeLayer.clearLayers(); document.getElementById('stops-list').innerHTML="";
             
@@ -859,19 +1016,14 @@
             });
 
             // RE-INIT SORTABLE (V116 FIX)
-            const listEl = document.getElementById('stops-list');
-            if(listEl) {
-                if(sortableInstance) sortableInstance.destroy();
-                sortableInstance = Sortable.create(listEl, {
-                    animation: 150,
-                    handle: '.handle',
-                    onEnd: function (evt) {
-                        const item = stops.splice(evt.oldIndex, 1)[0];
-                        stops.splice(evt.newIndex, 0, item);
-                        updateView();
-                    }
-                });
+            // Note: Sortable is already initialized on load, just need to ensure the list is refreshed for it
+            // No need to destroy/recreate constantly if ID is stable, but for safety:
+             const listEl = document.getElementById('stops-list');
+            /*
+            if(listEl && sortableInstance) {
+               // sortableInstance state remains valid as long as DOM element exists
             }
+            */
 
             if(pData.lat && stops.length > 0) {
                 let rRaw = pData.addr.split(',').map(p => p.trim()); let rShort = rRaw.slice(0, 3).join(', '); let rZip = pData.addr.match(/\b\d{5}\b/); if(rZip) rShort += " (" + rZip[0] + ")";
@@ -879,6 +1031,8 @@
                 calcRoute();
             } else updateStats(0,0); updateStatsTitle();
         }
+        
+        function updateStatsTitle() { const tourName = document.getElementById('tName').value.trim(); const titleElem = document.getElementById('kpi-tour-title'); if(tourName) titleElem.innerText = "RÉCAPITULATIF GLOBAL : " + tourName.toUpperCase(); else titleElem.innerText = "RÉCAPITULATIF GLOBAL"; }
 
         // ROUTE CALCULATION (V113 FIX LOOP)
         function calcRoute() {
