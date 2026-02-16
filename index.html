@@ -516,6 +516,31 @@
     <!-- TOAST ELEMENT -->
     <div id="toast">✨ Nouvelle tournée créée</div>
 
+    <!-- MODAL SAVE ACTION -->
+    <div id="save-action-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <div class="modal-header" style="color:var(--success); border:none; padding-bottom:0;">✅ Tournée Sauvegardée !</div>
+            <div class="modal-body" style="padding-top:10px;">
+                <p style="font-size:1.1rem; color:#555;">Votre tournée a bien été enregistrée dans le dossier.</p>
+                <p style="margin-bottom:25px;">Que souhaitez-vous faire maintenant ?</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                    <button class="btn-confirm" onclick="closeSaveActionModal()" style="background:white; color:var(--primary); border:2px solid var(--primary); width:80%;">
+                        ✏️ Continuer à modifier cette tournée
+                    </button>
+                    
+                    <div style="display:flex; align-items:center; width:80%; gap:10px;">
+                        <hr style="flex:1; border-top:1px solid #eee;"> <span style="font-size:0.8rem; color:#999;">OU</span> <hr style="flex:1; border-top:1px solid #eee;">
+                    </div>
+
+                    <button class="btn-confirm" onclick="triggerNewTourFromModal()" style="background:var(--accent); width:80%;">
+                        ➕ Créer une NOUVELLE tournée
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL RGPD -->
     <div id="rgpd-modal" class="modal">
         <div class="modal-content">
@@ -874,7 +899,8 @@
                 btn.innerText = "✅ SAUVEGARDÉ !";
                 btn.style.background = "#219150";
                 
-                alert("✅ TOURNÉE SAUVEGARDÉE !\n\n👉 Pour continuer : Ajoutez simplement d'autres arrêts à la suite.\n👉 Pour changer : Cliquez sur '➕ Nouvelle Tournée' (en haut) pour repartir à zéro.\n\n📂 Retrouvez tout en bas : Votre tournée est dans le dossier 'Mes Tournées Enregistrées'. Cliquez dessus à tout moment pour la reprendre/modifier.");
+                // SHOW DECISION MODAL INSTEAD OF ALERT
+                document.getElementById('save-action-modal').style.display = 'flex';
                 
                 setTimeout(() => { 
                     btn.innerText = originalText; 
@@ -886,11 +912,20 @@
             }
         }
 
+        function closeSaveActionModal() {
+            document.getElementById('save-action-modal').style.display = 'none';
+        }
+
+        function triggerNewTourFromModal() {
+            closeSaveActionModal();
+            newTour(true); // skip confirmation
+        }
+
         function loadTour(id) { const tour = savedTours.find(t => t.id === id); if(tour) { currentTourId = tour.id; document.getElementById('tName').value = tour.name; document.getElementById('tDay').value = tour.day; stops = tour.stops || []; updateView(); updateStatsTitle(); renderToursList(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
         
-        function newTour() { 
-            // 1. CONFIRMATION
-            if(stops.length > 0 && !confirm("Voulez-vous vider la carte pour créer une nouvelle tournée ?")) return; 
+        function newTour(skipConfirm) { 
+            // 1. CONFIRMATION (Conditional)
+            if(!skipConfirm && stops.length > 0 && !confirm("Voulez-vous vider la carte pour créer une nouvelle tournée ?")) return; 
             
             // 2. RESET STATE
             currentTourId = null; 
