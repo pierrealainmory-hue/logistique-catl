@@ -14,7 +14,7 @@
 
     <style>
         :root { --primary: #2c3e50; --accent: #e67e22; --success: #27ae60; --bg: #f4f7f9; --danger: #e74c3c; --info: #3498db; --lib: #8e44ad; --text: #546e7a; --locked: #bdc3c7; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; background: var(--bg); color: #333; display: flex; flex-direction: column; min-height: 100vh; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; background: var(--bg); color: #333; display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 80px; /* Space for sticky bar */ }
         
         /* HEADER */
         .client-header { background: white; padding: 15px 25px; border-radius: 6px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 6px solid var(--success); }
@@ -208,8 +208,49 @@
         .dix-footer { margin-top: 40px; padding: 20px; background: white; border-radius: 6px; display: flex; justify-content: center; align-items: center; gap: 15px; color: #7f8c8d; font-size: 0.9rem; flex-direction: column; }
         .dix-logo-small { height: 45px; width: auto; vertical-align: middle; }
 
+        /* STICKY BOTTOM BAR FOR SUBMISSION (UX IMPROVEMENT) */
+        .sticky-send-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 4px solid var(--lib);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            padding: 15px 20px;
+            z-index: 9000;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from {transform: translateY(100%);} to {transform: translateY(0);} }
+        .sticky-text { font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+        .btn-sticky-send {
+            background: var(--lib);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(142, 68, 173, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(142, 68, 173, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(142, 68, 173, 0); }
+        }
+
+
         /* MODALS */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
         .modal-content { background-color: #fefefe; margin: auto; padding: 30px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; animation: slideDown 0.3s ease-out; }
         @keyframes slideDown { from {transform: translateY(-50px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
         .modal-header { font-size: 1.3rem; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
@@ -507,7 +548,7 @@
         </div>
     </div>
 
-    <div class="card" style="border-left: 6px solid var(--lib); margin-top:30px;">
+    <div class="card" style="border-left: 6px solid var(--lib); margin-top:30px; margin-bottom: 60px;">
         <h3 style="margin-top:0; font-size:1.2rem; color:var(--lib); margin-bottom:15px;">📂 Mes Tournées Enregistrées (Dossier Complet)</h3>
         
         <div id="global-totals-container" class="global-stats-box" style="display:none;">
@@ -531,6 +572,14 @@
         <div style="display:flex; justify-content:center; margin-top:20px;">
             <button id="btn-export-project" onclick="openRgpdModal()">🚀 ENVOYER LE PROJET AU CATL</button>
         </div>
+    </div>
+    
+    <!-- STICKY BOTTOM BAR (NOUVEAU) -->
+    <div id="sticky-send-bar" class="sticky-send-bar">
+        <span class="sticky-text">🚀 Votre dossier est prêt ?</span>
+        <button class="btn-sticky-send" onclick="openRgpdModal()">
+            CLIQUEZ ICI POUR ENVOYER AU CATL
+        </button>
     </div>
 
     <!-- PIED DE PAGE AVEC MENTIONS LEGALES -->
@@ -565,12 +614,17 @@
                         ✏️ Continuer à modifier cette tournée
                     </button>
                     
-                    <div style="display:flex; align-items:center; width:80%; gap:10px;">
-                        <hr style="flex:1; border-top:1px solid #eee;"> <span style="font-size:0.8rem; color:#999;">OU</span> <hr style="flex:1; border-top:1px solid #eee;">
-                    </div>
-
                     <button class="btn-confirm" onclick="triggerNewTourFromModal()" style="background:var(--accent); width:80%;">
                         ➕ Créer une NOUVELLE tournée
+                    </button>
+
+                    <div style="display:flex; align-items:center; width:80%; gap:10px;">
+                        <hr style="flex:1; border-top:1px solid #eee;"> <span style="font-size:0.8rem; color:#999;">OU J'AI FINI</span> <hr style="flex:1; border-top:1px solid #eee;">
+                    </div>
+                    
+                    <!-- NOUVEAU BOUTON D'ACTION DIRECTE -->
+                    <button class="btn-confirm" onclick="triggerSendFromModal()" style="background:var(--lib); width:90%; font-size:1.1rem; padding:15px; border:2px solid var(--lib); box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3);">
+                        🚀 TERMINER & ENVOYER AU CATL
                     </button>
                 </div>
             </div>
@@ -882,7 +936,18 @@
         function renderToursList() {
             const container = document.getElementById('tours-list-container');
             const totalBox = document.getElementById('global-totals-container');
-            if(savedTours.length === 0) { container.innerHTML = '<div style="padding:20px; color:#999; font-style:italic; text-align:center;">Aucune tournée enregistrée pour l\'instant. Utilisez le formulaire ci-dessus.</div>'; totalBox.style.display = "none"; return; }
+            const stickyBar = document.getElementById('sticky-send-bar'); // NEW STICKY BAR
+
+            if(savedTours.length === 0) { 
+                container.innerHTML = '<div style="padding:20px; color:#999; font-style:italic; text-align:center;">Aucune tournée enregistrée pour l\'instant. Utilisez le formulaire ci-dessus.</div>'; 
+                totalBox.style.display = "none"; 
+                if(stickyBar) stickyBar.style.display = "none"; // Hide sticky bar if empty
+                return; 
+            }
+            
+            // Show sticky bar if we have tours
+            if(stickyBar) stickyBar.style.display = "flex";
+
             container.innerHTML = '';
             let gCA = 0, gCost = 0, gDist = 0, gTime = 0;
             savedTours.forEach(t => {
@@ -1020,6 +1085,12 @@
         function triggerNewTourFromModal() {
             closeSaveActionModal();
             newTour(true); // skip confirmation
+        }
+
+        // NEW FUNCTION TO LINK MODAL TO SEND ACTION
+        function triggerSendFromModal() {
+            closeSaveActionModal();
+            openRgpdModal();
         }
 
         function loadTour(id) { const tour = savedTours.find(t => t.id === id); if(tour) { currentTourId = tour.id; document.getElementById('tName').value = tour.name; document.getElementById('tDay').value = tour.day; stops = tour.stops || []; updateView(); updateStatsTitle(); renderToursList(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
@@ -1198,7 +1269,15 @@
 
         // ROUTE CALCULATION (V113 FIX LOOP)
         function calcRoute() {
-            let pts = [[pData.lon, pData.lat], ...stops.map(s=>[s.lon, s.lat]), [pData.lon, pData.lat]];
+            // FIX V128: Utilisation de OSRM DE (Allemagne) pour une meilleure performance en Europe et éviter le fallback "vol d'oiseau"
+            // Troncature des coordonnées pour éviter les URLs trop longues et les erreurs de parsing
+            const fmt = (n) => parseFloat(n).toFixed(6);
+
+            let pts = [
+                [fmt(pData.lon), fmt(pData.lat)], 
+                ...stops.map(s => [fmt(s.lon), fmt(s.lat)]), 
+                [fmt(pData.lon), fmt(pData.lat)]
+            ];
             
             const fallbackRoute = () => {
                 console.log("Mode Vol d'oiseau activé");
@@ -1209,12 +1288,15 @@
                 const fuelPrice = parseFloat(document.getElementById('fPrice').value) || 0;
                 const prixAmort = parseFloat(document.getElementById('vAmort').value) || 0;
 
-                for(let i=0; i<pts.length-1; i++) {
-                    const from = L.latLng(pts[i][1], pts[i][0]);
-                    const to = L.latLng(pts[i+1][1], pts[i+1][0]);
+                // On reconstruit pts pour le calcul local car pts est maintenant un tableau de strings
+                let localPts = [[pData.lon, pData.lat], ...stops.map(s=>[s.lon, s.lat]), [pData.lon, pData.lat]];
+
+                for(let i=0; i<localPts.length-1; i++) {
+                    const from = L.latLng(localPts[i][1], localPts[i][0]);
+                    const to = L.latLng(localPts[i+1][1], localPts[i+1][0]);
                     const legDist = (from.distanceTo(to) / 1000) * 1.2; // Majoration 20%
                     totalDist += legDist;
-                    polylinePts.push([pts[i][1], pts[i][0]]);
+                    polylinePts.push([localPts[i][1], localPts[i][0]]);
 
                     // UPDATE STOP UI (FALLBACK LOOP)
                     if(i < stops.length) {
@@ -1223,7 +1305,7 @@
                         updateStopUI(i, s, legDist, legDur, cH, conso, fuelPrice, prixAmort);
                     }
                 }
-                polylinePts.push([pts[pts.length-1][1], pts[pts.length-1][0]]);
+                polylinePts.push([localPts[localPts.length-1][1], localPts[localPts.length-1][0]]);
                 
                 L.polyline(polylinePts, {color:'var(--info)', weight:5, dashArray: '10, 10'}).addTo(routeLayer);
                 map.fitBounds(L.featureGroup(markers.getLayers()).getBounds().pad(0.2));
@@ -1231,7 +1313,8 @@
                 updateStats(totalDist, (totalDist / 50) * 60); 
             };
 
-            fetch(`https://router.project-osrm.org/route/v1/driving/${pts.map(p=>p.join(',')).join(';')}?overview=full&geometries=geojson`)
+            // URL OSRM DE (Allemagne) - Plus rapide pour l'Europe
+            fetch(`https://routing.openstreetmap.de/routed-car/route/v1/driving/${pts.map(p=>p.join(',')).join(';')}?overview=full&geometries=geojson`)
             .then(r => r.json())
             .then(res => {
                 if(res.code === 'Ok'){
@@ -1342,17 +1425,28 @@
             const btn = document.getElementById('btn-export-project'); 
             btn.disabled = true; btn.innerText = "⏳ Envoi en cours...";
             
+            // Aussi désactiver le bouton sticky s'il existe
+            const stickyBtn = document.querySelector('.btn-sticky-send');
+            if(stickyBtn) { stickyBtn.disabled = true; stickyBtn.innerText = "⏳..."; }
+
             const fullData = { meta: { date: new Date().toISOString(), version: "V113_CATL_Calculs" }, depot: JSON.parse(localStorage.getItem('pnr_logistique_v83_clean')), tours: savedTours };
             const nomProd = document.getElementById('pName').value || "Producteur Inconnu";
             
             try { 
                 const { data, error } = await supabaseClient.from('tournees_catl').insert([ { nom_producteur: nomProd, data_json: fullData } ]); 
                 if (error) throw error; 
+                
+                // Cacher la barre sticky en cas de succès
+                document.getElementById('sticky-send-bar').style.display = 'none';
+
                 document.getElementById('success-modal').style.display = 'flex';
                 console.log("Envoyé:", data); 
             } catch (err) { 
                 console.error("Erreur Supabase:", err); 
                 alert("❌ Erreur technique : " + err.message); 
+                
+                if(stickyBtn) { stickyBtn.disabled = false; stickyBtn.innerText = "CLIQUEZ ICI POUR ENVOYER AU CATL"; }
+
             } finally { 
                 btn.disabled = false; btn.innerText = "🚀 ENVOYER LE PROJET AU CATL"; 
             }
