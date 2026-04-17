@@ -1,0 +1,191 @@
+############################
+# OS files
+############################
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+############################
+# Logs
+############################
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+# Environment variables
+############################
+.env
+.env.*
+*.local
+
+############################
+# Dependency directories
+############################
+node_modules/
+bower_components/
+jspm_packages/
+
+############################
+# Build outputs
+############################
+dist/
+build/
+out/
+target/
+bin/
+tmp/
+temp/
+.cache/
+coverage/
+
+############################
+# IDE / Editor files
+############################
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+############################
+# Python
+############################
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.mypy_cache/
+
+############################
+# Node / JavaScript
+############################
+.npm/
+.eslintcache
+.next/
+.nuxt/
+.svelte-kit/
+dist-ssr/
+*.tsbuildinfo
+
+############################
+# Java / Kotlin / Gradle
+############################
+.gradle/
+build/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+############################
+# C / C++ / CMake
+############################
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+Makefile
+*.o
+*.out
+*.exe
+
+############################
+# Go
+############################
+bin/
+pkg/
+
+############################
+# Rust
+############################
+target/
+Cargo.lock
+
+############################
+# PHP / Composer
+############################
+vendor/
+composer.lock
+
+############################
+# Ruby
+############################
+.bundle/
+vendor/bundle/
+*.gem
+
+############################
+# Swift / Xcode
+############################
+DerivedData/
+*.xcworkspace
+*.xcuserdata
+*.xcuserstate
+
+############################
+# Docker
+############################
+.dockerignore
+
+############################
+# Terraform
+############################
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+############################
+# Misc
+############################
+*.bak
+*.tmp
+*.temp
+*.swp
+*.lock
+
+############################
+# Sensitive files
+############################
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+############################
+# Databases
+############################
+*.sqlite
+*.db
+
+############################
+# Coverage reports
+############################
+coverage/
+*.lcov
+
+############################
+# Archives
+############################
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
